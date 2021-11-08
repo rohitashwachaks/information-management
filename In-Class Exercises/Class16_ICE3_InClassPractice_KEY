@@ -1,0 +1,329 @@
+
+--------------------------------------------------
+--IN-CLASS EXERCISE FOR SUBQUERIES - CH 6 - KEY
+--------------------------------------------------
+
+-- 1. FIRST SUBQUERY
+SELECT avg(invoice_total)
+from invoices;
+
+-- See below, which is just showing what the subquery essentially returns
+SELECT invoice_id, invoice_total
+FROM invoices
+WHERE invoice_total > (1879.741315789473684210526315789473684211);
+--
+--    minus
+--
+SELECT invoice_id, invoice_total
+FROM invoices
+WHERE invoice_total > (SELECT avg(invoice_total) from invoices);
+
+
+--NOTE: This does the same as the query above but puts the subquery in the HAVING
+select invoice_id, avg(invoice_total) avg_invoice_total
+from invoices
+group by invoice_id
+having avg(invoice_total) > (SELECT avg(invoice_total) from invoices);
+
+
+
+
+
+
+
+-- 2. PULL INVOICES FOR VENDORS IN TX, TN, NV
+SELECT VENDOR_ID FROM VENDORS
+WHERE VENDOR_STATE IN ('TX', 'TN', 'NV');
+
+--this query uses explicit values in the WHERE to pull invoices for TX, TN, NV vendors
+SELECT INVOICE_ID, INVOICE_DATE, INVOICE_TOTAL
+FROM INVOICES
+WHERE VENDOR_ID IN (83, 100, 122, 123);
+
+--this query uses a subquery in the WHERE but does the same as the previous query
+SELECT INVOICE_ID, INVOICE_DATE, INVOICE_TOTAL
+FROM INVOICES
+WHERE VENDOR_ID IN 
+    (SELECT VENDOR_ID 
+     FROM VENDORS
+     WHERE VENDOR_STATE IN ('TX', 'TN', 'NV')
+    );
+
+-- NOTE: we can also do this without a subquery and use a join.
+-- RUN BOTH QUERIES WITH MINUS TO SEE THEY RETURN IDENTICAL RESULTS
+SELECT INVOICE_ID, INVOICE_DATE, INVOICE_TOTAL  
+FROM VENDORS V JOIN INVOICES I
+ON V.vendor_id = I.vendor_ID
+WHERE VENDOR_STATE IN ('TX', 'TN', 'NV')
+--    minus
+--SELECT INVOICE_ID, INVOICE_DATE, INVOICE_TOTAL
+--FROM INVOICES
+--WHERE VENDOR_ID IN (SELECT VENDOR_ID FROM VENDORS
+--WHERE VENDOR_STATE IN ('TX', 'TN', 'NV'))
+;
+
+
+
+
+
+-- 3. UPDATE QUERY TO PULL INVOICE INFO FOR ALL VENDORS NOT IN THOSE STATES
+--Option 1 - update the main query to pull vendors NOT in the subquery
+SELECT INVOICE_ID, INVOICE_DATE, INVOICE_TOTAL
+FROM INVOICES
+WHERE VENDOR_ID NOT IN 
+    (SELECT VENDOR_ID 
+     FROM VENDORS
+     WHERE VENDOR_STATE IN ('TX', 'TN', 'NV')
+    );
+    
+--Option 2 - update the subquery to only pull vendor_ids from vendors no in TX, TN, NV
+SELECT INVOICE_ID, INVOICE_DATE, INVOICE_TOTAL
+FROM INVOICES
+WHERE VENDOR_ID IN 
+    (SELECT VENDOR_ID 
+     FROM VENDORS
+     WHERE VENDOR_STATE NOT IN ('TX', 'TN', 'NV')
+    );
+
+
+
+
+-- 4. PULL ALL INVOICES WITH ALL COLUMNS THAT HAVE INVOICE_TOTAL GREATER THAN ALL OF IBM'S INVOICE TOTALS
+--initial query to pull all invoice_totals
+SELECT INVOICE_TOTAL 
+FROM INVOICES I JOIN VENDORS V
+ON I.VENDOR_ID = V.VENDOR_ID
+WHERE VENDOR_NAME = 'IBM';
+
+--option A that uses > ALL 
+SELECT *
+FROM INVOICES
+WHERE INVOICE_TOTAL > ALL (SELECT INVOICE_TOTAL 
+                            FROM INVOICES I JOIN VENDORS V
+                            ON I.VENDOR_ID = V.VENDOR_ID
+                            WHERE VENDOR_NAME = 'IBM');
+            
+--option B that uses > MAX
+SELECT *
+FROM INVOICES
+WHERE INVOICE_TOTAL > (SELECT MAX(INVOICE_TOTAL) 
+                       FROM INVOICES I JOIN VENDORS V
+                       ON I.VENDOR_ID = V.VENDOR_ID
+                       WHERE VENDOR_NAME = 'IBM');
+
+
+
+
+
+-- 5. UPDATE QUERY TO PULL THE INVOICES THAT ARE GREATER THAN JUST SOME OF IBM'S INVOICES (i.e. greater than min)
+--option A - SOME keyword
+SELECT *
+FROM INVOICES
+WHERE INVOICE_TOTAL > SOME (SELECT INVOICE_TOTAL
+                            FROM INVOICES I JOIN VENDORS V
+                            ON I.VENDOR_ID = V.VENDOR_ID
+                            WHERE VENDOR_NAME = 'IBM'); 
+--option B
+SELECT *
+FROM INVOICES
+WHERE INVOICE_TOTAL > (SELECT MIN(INVOICE_TOTAL)
+                       FROM INVOICES I JOIN VENDORS V
+                       ON I.VENDOR_ID = V.VENDOR_ID
+                       WHERE VENDOR_NAME = 'IBM');
+                       
+                 
+--option C - use 3 queries instead of a subquery with inner join                       
+select * 
+from invoices 
+where invoice_total > SOME(select invoice_total
+                           from invoices 
+                           where vendor_id in (select vendor_id
+                                               from vendors
+                                               where vendor_name = 'IBM'));
+                                        
+                                     
+                                                                     
+-- 6.	Find the average count of invoices for all vendors that have sent more than 1 invoice but while ignoring vendor 123 who has sent us more than 40 invoices
+
+--Hint: Start by finding the count of invoices for each vendor and filtering out the ones that have a count of 1.  
+SELECT VENDOR_ID, count(invoice_id) as invoice_count
+FROM INVOICES
+GROUP BY VENDOR_ID 
+having count(invoice_id) > 1;
+
+--Then use this query as a subquery but selecting the average count from it
+select avg(invoice_count) as avg_invoice_count
+from (SELECT VENDOR_ID, count(invoice_id) as invoice_count
+      FROM INVOICES
+      GROUP BY VENDOR_ID 
+      having count(invoice_id) > 1) sub
+;
+      
+
+--After you complete this add in a filter to ignore vendor_id 123 and you should see the average go down since they had a lot of invoices.
+select avg(invoice_count) as avg_invoice_count
+from (SELECT VENDOR_ID, count(invoice_id) as invoice_count
+      FROM INVOICES
+      GROUP BY VENDOR_ID 
+      having count(invoice_id) > 1) sub
+where vendor_id <> 123;
+
+--round the count
+select round(avg(invoice_count),1) as avg_invoice_count
+from (SELECT VENDOR_ID, count(invoice_id) as invoice_count
+      FROM INVOICES
+      GROUP BY VENDOR_ID 
+      having count(invoice_id) > 1) sub
+where vendor_id <> 123;
+      
+ 
+
+-- 7. COMBINE THE TWO QUERIES USING AN INLINE VIEW IN THE FROM CLAUSE
+--FIRST QUERY...Give this a table alias of summary_1
+SELECT  v.vendor_id, 
+        v.vendor_name,
+        v.vendor_state,
+        SUM(i.invoice_total) AS sum_of_invoices
+FROM invoices i JOIN vendors v ON i.vendor_id = v.vendor_id
+GROUP BY v.vendor_id, v.vendor_name, v.vendor_state
+order by vendor_state;
+
+ 
+--SECOND QUERY....Give this a table alias of summary_2
+select vendor_state, max(sum_of_invoices) as invoice_total
+from
+(SELECT v.vendor_id, 
+        v.vendor_state,
+        SUM(i.invoice_total) AS sum_of_invoices 
+FROM invoices i JOIN vendors v ON i.vendor_id = v.vendor_id
+GROUP BY v.vendor_id, v.vendor_state
+order by v.vendor_state)  
+group by vendor_state;
+
+
+-- COMBINE MATCHING STATE AND INVOICE_TOTAL
+SELECT * 
+FROM (SELECT  v.vendor_id, 
+        v.vendor_name,
+        v.vendor_state,
+        SUM(i.invoice_total) AS INVOICE_TOTAL
+      FROM invoices i JOIN vendors v ON i.vendor_id = v.vendor_id
+      GROUP BY v.vendor_id, v.vendor_name, v.vendor_state
+      order by vendor_state) SUMMARY_1   
+      
+            INNER JOIN 
+      
+      (select vendor_state, max(sum_of_invoices) invoice_total
+       from (SELECT v.vendor_id, 
+               v.vendor_state,
+               SUM(i.invoice_total) AS sum_of_invoices 
+             FROM invoices i JOIN vendors v ON i.vendor_id = v.vendor_id
+             GROUP BY v.vendor_id, v.vendor_state
+             order by v.vendor_state)  
+       group by vendor_state) SUMMARY_2 
+       
+        on SUMMARY_1.vendor_state = summary_2.vendor_state and SUMMARY_1.INVOICE_TOTAL = SUMMARY_2.invoice_total;
+     
+     
+     
+
+-- Final Step - Update the select to pull columns you want
+SELECT vendor_name, summary_1.vendor_state, summary_1.invoice_total
+FROM (SELECT  v.vendor_id, 
+        v.vendor_name,
+        v.vendor_state,
+        SUM(i.invoice_total) AS INVOICE_TOTAL
+      FROM invoices i JOIN vendors v ON i.vendor_id = v.vendor_id
+      GROUP BY v.vendor_id, v.vendor_name, v.vendor_state
+      order by vendor_state) SUMMARY_1   
+         
+            INNER JOIN  
+      
+      (select vendor_state, max(sum_of_invoices) invoice_total
+       from (SELECT v.vendor_id, 
+               v.vendor_state,
+               SUM(i.invoice_total) AS sum_of_invoices 
+             FROM invoices i JOIN vendors v ON i.vendor_id = v.vendor_id
+             GROUP BY v.vendor_id, v.vendor_state
+             order by v.vendor_state)  
+       group by vendor_state) SUMMARY_2 
+        
+        on SUMMARY_1.vendor_state = summary_2.vendor_state and SUMMARY_1.INVOICE_TOTAL = SUMMARY_2.invoice_total;
+     
+
+
+
+
+
+
+
+
+-------------------------------------------------
+-- MORE PRACTICE YAYAYAYAYAYAYAY!!!!!
+-------------------------------------------------
+
+-- 8. Using a subquery, tell me how many employees in each department are currently assigned to projects.
+-- Just as a reference, this shows you which employees are assigned to projects. 
+SELECT EMPLOYEE_ID, COUNT(*) 
+FROM PROJECTS
+GROUP BY EMPLOYEE_ID;
+
+--This joins department to employees to pull info by only for employees on employees
+SELECT D.DEPARTMENT_NAME, COUNT(EMPLOYEE_ID)
+FROM DEPARTMENTS D JOIN EMPLOYEES E
+     ON D.DEPARTMENT_NUMBER = E.DEPARTMENT_NUMBER
+WHERE EMPLOYEE_ID IN (SELECT EMPLOYEE_ID FROM PROJECTS)
+GROUP BY D.DEPARTMENT_NAME;
+
+
+
+
+
+-- 9. Using two subqueries, give me a list of full customer name, customer city, and customer state from the 
+-- customers_ex table where the customer is the only customer living in their city. 
+SELECT CUSTOMER_FIRST_NAME || ' ' || CUSTOMER_LAST_NAME AS CUSTOMER_NAME, CUSTOMER_CITY, CUSTOMER_STATE FROM CUSTOMERS_EX
+WHERE CUSTOMER_CITY IN (SELECT CUSTOMER_CITY FROM (SELECT COUNT(*), CUSTOMER_CITY FROM CUSTOMERS_EX
+GROUP BY CUSTOMER_CITY));
+
+--Hint...to do #9 start by getting a list of all the states that have 1 customer
+select customer_state, count(*)
+from customers_ex  
+group by customer_state
+having count(*) = 1;
+
+--One I have the list of states with 1 customer, I can make that a subquery to a query that pulls all customers_ex records
+select * 
+from customers_ex
+where customer_state in (select customer_state 
+                         from customers_ex  
+                         group by customer_state
+                         having count(*) = 1);
+
+--The last step is to select the columns you want. Also added in a sort by state to ensure it's only one customer per state
+select CUSTOMER_FIRST_NAME || ' ' || CUSTOMER_LAST_NAME AS CUSTOMER_NAME, CUSTOMER_CITY, CUSTOMER_STATE
+from customers_ex
+where customer_state in (select customer_state 
+                         from customers_ex  
+                         group by customer_state
+                         having count(*) = 1)
+order by customer_state;
+
+
+
+
+
+
+
+-- 10. 
+SELECT CUSTOMER_FIRST_NAME || ' ' || CUSTOMER_LAST_NAME as customer_name, CUSTOMER_STATE, NUM_ORDERS, AVG_PROC_TIME
+FROM CUSTOMERS_EX C JOIN (SELECT O.CUSTOMER_ID, COUNT(*) AS NUM_ORDERS, ROUND(AVG(SHIPPED_DATE-ORDER_DATE),1) AS AVG_PROC_TIME 
+                          FROM ORDERS O JOIN CUSTOMERS_OM C
+                            ON O.CUSTOMER_ID = C.CUSTOMER_ID
+                          GROUP BY O.CUSTOMER_ID) CUSTOMERS_SHIPPING
+    ON C.CUSTOMER_ID = CUSTOMERS_SHIPPING.CUSTOMER_ID
+WHERE AVG_PROC_TIME > (SELECT AVG(SHIPPED_DATE-ORDER_DATE) FROM ORDERS)
+ORDER BY C.CUSTOMER_ID
+;
+
+
+
