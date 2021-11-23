@@ -1,0 +1,1774 @@
+------------------------------------------------------------------------------
+---------SELECT INTRO
+------------------------------------------------------------------------------
+
+--Select statement that retrieves all the data from Invoices table
+SELECT *
+FROM invoices;
+
+--Select statement that retrieves three columns from each row, sorted in ascending order by invoice_total
+SELECT invoice_number, invoice_date, invoice_total
+FROM invoices
+ORDER BY invoice_total;
+
+--Select statement that retrieves two columns and a calculated value
+SELECT invoice_id, invoice_total, credit_total, payment_total, (credit_total + payment_total)  
+FROM invoices
+WHERE invoice_id = 17;
+
+--Select statement that retrieves all invoices between a given set of dates
+SELECT invoice_number, invoice_date, invoice_total
+FROM invoices
+WHERE invoice_date BETWEEN '01-MAY-2014' AND '31-MAY-2014'
+ORDER BY invoice_date;
+
+--Select statement that returns an empty result set
+SELECT invoice_number, invoice_date, invoice_total 
+FROM invoices
+WHERE invoice_total > 50000;
+
+
+
+------------------------------------------------------------------------------
+---------How to name columns in a result set
+------------------------------------------------------------------------------
+
+--select statement that names a column with AS keyword
+SELECT  invoice_number AS "Invoice Number", 
+        invoice_date AS "Date",
+        invoice_total AS "total of invoice"
+FROM invoices;
+
+--select statement that names a column but omits AS keyword
+SELECT  invoice_number  "Invoice Number", 
+        invoice_date  "Date",
+        invoice_total  "total of invoice"
+FROM invoices;
+
+--What happens if we don't provide a name for a column?
+SELECT 	invoice_number, 
+        invoice_date, 
+        invoice_total,
+    	(invoice_total - payment_total - credit_total) as "balance due"
+FROM invoices;
+
+
+
+
+
+------------------------------------------------------------------------------
+---------How to code with string expressions
+------------------------------------------------------------------------------
+
+--how to concat string data
+SELECT vendor_city, vendor_state, vendor_city || vendor_state as "City_State"
+FROM vendors;
+
+
+--how to format strings using literal values
+SELECT 	vendor_name,
+    	vendor_city || ', ' || vendor_state || ' ' || vendor_zip_code AS address
+FROM vendors;
+
+
+--how to include apostrophes in a literal value
+SELECT vendor_name || '''s address: ',
+    vendor_city || ', ' || vendor_state || ' ' || vendor_zip_code
+FROM vendors;
+
+
+
+
+------------------------------------------------------------------------------
+---------How to code with artithmetic expressions
+------------------------------------------------------------------------------
+
+--a statement that calculates the balance due to vendor
+SELECT invoice_total, payment_total, credit_total,
+    invoice_total - payment_total - credit_total AS balance_due
+FROM invoices;
+ 
+
+--a statement that uses parentheses to control the sequence of operations
+SELECT invoice_id,
+    invoice_id + 7 * 3 AS order_of_precedence,
+    (invoice_id + 7) * 3 AS add_first
+FROM invoices
+ORDER BY invoice_id;
+--NOTE: Standard PEMDAS rules apply here
+
+
+
+------------------------------------------------------------------------------
+---------How to code with scalar functions
+------------------------------------------------------------------------------
+
+--Example of SUBSTR function
+SELECT vendor_contact_first_name, vendor_contact_last_name,
+    SUBSTR( vendor_contact_first_name, 1, 1) ||
+    SUBSTR( vendor_contact_last_name, 1, 1) AS initials
+FROM vendors;
+
+
+--example of TO_CHAR function which converts non-strings to characters for parsing/editing
+SELECT 'Invoice: # ' || invoice_number || ', dated ' || 
+    TO_CHAR(payment_date, 'MM/DD/YYYY') || 
+    ' for $' || TO_CHAR(payment_total) AS "Invoice Text"
+FROM invoices;
+
+
+--SYSDATE and ROUND functions
+SELECT invoice_date, 
+    SYSDATE AS today, 
+--    sysdate - invoice_date,
+    ROUND(SYSDATE - invoice_date)  AS invoice_age_in_days
+FROM invoices;
+
+
+--Statement that uses the MOD function
+--Helpful when you want to figure out if a number is odd or even
+SELECT invoice_id,
+    MOD(invoice_id, 2) AS remainder
+FROM invoices
+ORDER BY invoice_id;
+
+
+
+------------------------------------------------------------------------------
+---------How to use the Dual table
+------------------------------------------------------------------------------
+
+--Example of using the DUAL table
+SELECT 'test'  AS test_string, 
+       10-7    AS test_calculation, 
+       SYSDATE AS test_date,
+       (10+10)*2 as "testing"
+from dual;
+
+
+
+
+
+------------------------------------------------------------------------------
+---------How to use the DISTINCT keyword to remove dups
+------------------------------------------------------------------------------
+
+--statement that returns all rows
+SELECT vendor_city, vendor_state
+FROM vendors
+ORDER BY vendor_city;
+
+--statement that returns only distinct row values aka...removes duplicate rows
+SELECT DISTINCT vendor_city, vendor_state
+FROM vendors
+ORDER BY vendor_city;
+
+
+
+------------------------------------------------------------------------------
+---------How to use the ROWNUM pseudo column
+------------------------------------------------------------------------------
+
+--limiting results by ROWNUM pseudo column
+SELECT vendor_id, invoice_total
+FROM invoices
+WHERE ROWNUM <= 10;
+
+--SORT after the WHERE clause and columns are selected.
+--NOTE: Let's talk about order or operations in a SQL statement
+SELECT vendor_id, invoice_total
+FROM invoices
+WHERE ROWNUM <= 5
+ORDER BY invoice_total DESC;
+
+--SORT before the WHERE clause
+SELECT vendor_id, invoice_total
+FROM (SELECT * FROM invoices
+      ORDER BY invoice_total DESC)
+WHERE ROWNUM <= 5;
+
+
+
+-- Answer key for In-class exercise: SELECT statements
+
+-- Basic Select
+-- 1. Select all records from the Vendor table
+SELECT * FROM vendors;
+
+-- 2. Select ID, name, address, city, state, zip from vendors. 
+SELECT vendor_id, vendor_name, vendor_address1, vendor_city, vendor_state, vendor_zip_code 
+FROM vendors;
+
+-- String Expressions
+-- 3. Select all vendors but concatenate Address into this format: Address; City, State  Zip  Don�t include alias this time 
+SELECT vendor_id, vendor_name, vendor_address1 || '; ' || vendor_city || ', ' || vendor_state || ' ' || vendor_zip_code
+FROM vendors;
+
+-- 4. Add a column alias to this newly created column called �Vendor Address�
+SELECT vendor_id, vendor_name, vendor_address1 || '; ' || vendor_city || ', ' || vendor_state || ' ' ||  vendor_zip_code AS vendor_address
+FROM vendors;
+
+-- Arithmetic Expressions
+-- 5. Using the Invoices table, pull vendor_id, invoice total, payment total, and difference of invoice_total  & payment_total.  Rename calculate calculated to �Amount Owed� 
+SELECT vendor_id, invoice_total, payment_total, invoice_total - payment_total
+FROM invoices;
+
+-- 6. Rename calculated to "amount owed"
+SELECT vendor_id, invoice_total, payment_total, invoice_total - payment_total AS amount_owed
+FROM invoices;
+
+-- 7. Add in a WHERE clause that results in only the first 5 rows being returned
+
+SELECT vendor_id, invoice_total, payment_total, invoice_total - payment_total AS amount_owed
+FROM invoices
+WHERE ROWNUM<=5;
+
+-- DUAL
+-- 8. Go select * from dual.  
+SELECT * FROM dual;
+
+-- 9. Now mess around with the dual table.
+SELECT 'HELLO', 'MY NAME IS Clint', 18*37
+FROM dual;
+
+-- Scalar Functions
+-- 10. Dual table for scalar functions:
+SELECT SYSDATE, 18*37, MOD(5231,17), TO_CHAR(SYSDATE, 'MM/DD/YYYY'), TO_CHAR(SYSDATE, 'DD/MM/YYYY')
+FROM dual;
+
+-- 11. Using Invoices table, select invoice_id, invoice_number, invoice_total, invoice_date, and a calculated column called �Days til Due� that returns the number of days until the invoice_date. Hint: Use SYSDATE function.  Also show days as a whole number using a 2nd function
+SELECT invoice_id, invoice_number, invoice_total, invoice_date, ROUND(invoice_due_date - SYSDATE) AS days_until_due
+FROM invoices;
+
+-- 12. Select the average invoice amount from invoices using the AVG function. Round to 2 decimal places.
+SELECT AVG(invoice_total)
+FROM invoices;
+
+SELECT ROUND(AVG(invoice_total),2)
+FROM invoices;
+
+-- 13. Using Customers_OM, select customer initials into one column and in another, a formatted phone number (e.g. 212-555-4800).  TIP: First write this out in pseudo code to determine functions you need and logic.
+SELECT SUBSTR(customer_first_name,1,1) || SUBSTR(customer_last_name,1,1) as initials, 
+SUBSTR(customer_phone,1,3) || '-' || SUBSTR(customer_phone,4,3) || '-' || SUBSTR(customer_phone,7,4) AS phone_num
+FROM Customers_OM;
+
+-- DISTINCT
+-- 14. What is the distinct number of vendors in Vendors table
+SELECT DISTINCT vendor_id, vendor_name 
+FROM Vendors
+ORDER BY vendor_name;
+
+-- 15. What is the distinct number of vendor_IDs on invoices.  TIP: First gather a list of vendor_ids in Invoices table and then add in the distinct keyword.
+SELECT DISTINCT vendor_id FROM Invoices;
+
+-- 16. Use the MOD function to determine if a number is even or odd.
+SELECT MOD(23482,2) AS remainder
+FROM dual;
+
+SELECT MOD(23481,2) AS remainder
+FROM dual;
+
+-- 17. Using Invoices table, select invoice_id, invoice_number, invoice_total, invoice_date, and a calculated column called "Weeks til Due� that returns the number of weeks until the invoice_date. 
+-- Add a column that lists the remainder of days, such that weeks_til_due + remainder_days = days_til_due.
+SELECT invoice_id, invoice_number, invoice_total, invoice_date, ROUND(invoice_due_date - SYSDATE) AS days_until_due, 
+ROUND(ROUND(invoice_due_date - SYSDATE)/7) AS weeks_until_due, MOD(ROUND(invoice_due_date - SYSDATE),7) AS remainder
+FROM invoices;
+
+-- 18.	Using the Invoices table, use a select statement to output one column of text that lists the Invoice number, date due, and payment total. (Hint: use the TO_CHAR function)
+SELECT 'Invoice: ' || invoice_number || ',dated ' || TO_CHAR(invoice_due_date, 'MM/DD/YYYY') || ' with payment total of ' || TO_CHAR(payment_total) AS Invoice_Text
+FROM invoices;
+
+
+
+
+--------------------------------------------------------------
+--  COMPARISON OPERATORS
+--------------------------------------------------------------
+--Vendors located in Iowa
+SELECT * 
+FROM VENDORS
+WHERE VENDOR_STATE = 'IA';
+
+--Invoices with a balance due
+select * 
+from invoices
+where invoice_total - payment_total - credit_total > 0;
+
+--variation of previous query
+select * 
+from invoices
+where invoice_total > payment_total + credit_total;
+
+--Invoices on or before a specified date
+select * 
+from invoices
+where invoice_date <= '30-Nov-20';
+--where invoice_date <= '01-MAY-14';
+
+-- invoices with credits that don't equal zero
+select * 
+from invoices
+where credit_total <> 0;
+
+
+--------------------------------------------------------------
+--  AND, OR, AND NOT LOGICAL OPERATORS
+--------------------------------------------------------------
+--search with AND operator
+select * 
+from vendors
+where vendor_state = 'NJ' AND vendor_city = 'Washington';
+
+--search with OR operator
+select * 
+from vendors
+where vendor_state = 'NJ' OR vendor_city = 'Fresno';
+
+--search with NOT operator
+select * 
+from invoices
+where NOT (invoice_total >= 5000 OR NOT invoice_date <= '01-JUL-2020');
+
+--previous rephrased to eliminate the NOT
+select * 
+from invoices
+where invoice_total < 5000 AND invoice_date <= '01-JUL-2020';
+
+
+-- A compound condition WITHOUT parentheses - We'll come back to this after reviewing basics
+SELECT invoice_number, invoice_date, invoice_total
+FROM invoices
+WHERE invoice_date > '01-MAY-2014'
+OR invoice_total > 500
+AND invoice_total - payment_total - credit_total > 0
+ORDER BY invoice_number;
+
+-- The same compound condition WITH parentheses  - We'll come back to this after reviewing basics
+SELECT invoice_number, invoice_date, invoice_total
+FROM invoices
+WHERE (invoice_date > '01-MAY-2014' OR invoice_total > 500)
+AND invoice_total - payment_total - credit_total > 0
+ORDER BY invoice_number;
+
+
+
+--------------------------------------------------------------
+--  IN OPERATOR
+--------------------------------------------------------------
+--IN operator with numbers
+select *
+from invoices
+--where terms_id = 1 OR terms_id = 2 OR terms_id = 3;
+where terms_id in (1,2,3);
+
+--IN operator preceded with NOT
+select vendor_name, vendor_state
+from vendors
+--where vendor_state <> 'CA' OR vendor_state <> 'NV' OR vendor_state <> 'OR'; 
+where vendor_state NOT IN ('CA','NV','OR');
+
+--IN operator with subquery
+select * 
+from invoices
+where vendor_id in (select vendor_id
+                    from invoices
+                    where invoice_date = '01-MAY-2014');
+
+    --just the subquery from previous query
+    select vendor_id
+    from invoices
+    where invoice_date = '01-MAY-2014';
+
+    --gets the same result as the subquery version 
+    select * 
+    from invoices
+    where vendor_id in (121,123);
+
+--------------------------------------------------------------
+--  BETWEEN OPERATOR
+--------------------------------------------------------------
+--BETWEEN with literal values
+select *
+from invoices
+where invoice_date BETWEEN '01-MAY-2019' AND '30-OCT-2020'; 
+
+--BETWEEN proceeded by NOT
+select *
+from vendors
+where vendor_zip_code NOT BETWEEN 93600 and 93799; 
+
+--BETWEEN operator with a test expression coded as a calculated value
+select * 
+from invoices 
+where invoice_total - payment_total - credit_total BETWEEN 200 and 500;
+
+--BETWEEN operator with the upper and lower limits coded as calculated values
+select * 
+from invoices
+where invoice_due_date BETWEEN SYSDATE AND (SYSDATE + 30);
+
+
+
+
+--------------------------------------------------------------
+--  LIKE OPERATOR
+--------------------------------------------------------------
+--like clause
+SELECT *
+FROM VENDORS
+WHERE VENDOR_CITY LIKE ('San%');
+
+SELECT *
+FROM VENDORS
+WHERE VENDOR_name like ('Compu_er%');
+
+
+
+--------------------------------------------------------------
+--  IS NULL OPERATOR
+--------------------------------------------------------------
+CREATE TABLE null_sample
+(
+Invoice_ID Number,
+Invoice_Total Number
+);
+
+INSERT INTO null_sample VALUES (1, 125);
+INSERT INTO null_sample VALUES (2, 0);
+INSERT INTO null_sample VALUES (3, NULL);
+INSERT INTO null_sample VALUES (4, 2199.99);
+INSERT INTO null_sample VALUES (5, 0);
+COMMIT;
+SELECT *
+FROM null_sample;
+
+SELECT *
+FROM null_sample
+WHERE invoice_total = 0;
+
+SELECT *
+FROM null_sample
+WHERE invoice_total <> 0;
+
+SELECT *
+FROM null_sample
+WHERE invoice_total IS NULL;
+
+SELECT *
+FROM null_sample
+WHERE invoice_total IS NOT NULL;
+
+
+--------------------------------------------------------------
+--  SORT BY COLUMN NAME
+--------------------------------------------------------------
+--SORT BY ONE COLUMN
+SELECT vendor_name,
+    vendor_city || ', ' || vendor_state || ' ' || vendor_zip_code AS address
+FROM vendors
+ORDER BY vendor_name;
+
+--SORT BY ONE COLUMN DESCENDING
+SELECT vendor_name,
+    vendor_city || ', ' || vendor_state || ' ' || vendor_zip_code AS address
+FROM vendors
+ORDER BY vendor_name DESC;
+
+--SORT BY THREE COLUMNS
+SELECT vendor_name,
+    vendor_city || ', ' || vendor_state || ' ' || vendor_zip_code AS address
+FROM vendors
+ORDER BY vendor_state, vendor_city DESC, vendor_name DESC;
+
+
+--------------------------------------------------------------
+--  SORT BY COLUMN NAME
+--------------------------------------------------------------
+--SORT BY ALIAS
+SELECT vendor_name,
+    vendor_city || ', ' || vendor_state || ' ' || vendor_zip_code AS address
+FROM vendors
+ORDER BY address, vendor_name;
+
+--SORT BY EXPRESSION
+SELECT vendor_name,
+    vendor_city || ', ' || vendor_state || ' ' || vendor_zip_code AS address
+FROM vendors
+ORDER BY vendor_contact_last_name || vendor_contact_first_name;
+
+--SORT BY COLUMN POSITION
+SELECT vendor_name,
+    vendor_city || ', ' || vendor_state || ' ' || vendor_zip_code AS address
+FROM vendors
+ORDER BY 2 desc, 1;
+
+
+
+--------------------------------------------------------------
+--  NOT IN SCOPE FOR CLASS BUT KNOCK YOURSELF OFF IF YOU'RE CURIOUS
+--------------------------------------------------------------
+-- NOTE: This statement only works with Oracle 12c or later
+SELECT vendor_id, invoice_total
+FROM invoices
+ORDER BY invoice_total DESC
+FETCH FIRST 5 ROWS ONLY;
+
+
+-- NOTE: This statement only works with Oracle 12c or later
+SELECT invoice_id, vendor_id, invoice_total
+FROM invoices
+ORDER BY invoice_id
+OFFSET 2 ROWS FETCH NEXT 3 ROWS ONLY;
+
+
+-- NOTE: This statement only works with Oracle 12c or later
+SELECT invoice_id, vendor_id, invoice_total
+FROM invoices
+ORDER BY invoice_id
+OFFSET 100 ROWS FETCH NEXT 1000 ROWS ONLY;
+
+
+-- IN-CLASS EXERCISE FOR ORDER BY, WHERE
+-- ORDERING
+-- 1. Sort ID, name, address, city, state, and zip from vendors and sort ascending
+SELECT vendor_id, vendor_name, vendor_city, vendor_state, vendor_zip_code
+FROM vendors
+ORDER BY vendor_state ;
+
+
+
+-- 2. Now sort by state Z-A
+SELECT vendor_id, vendor_name, vendor_city, vendor_state, vendor_zip_code
+FROM vendors
+ORDER BY vendor_state DESC;
+
+
+
+-- 3. Sort by state, city, and vendor name using column names
+SELECT vendor_id, vendor_name, vendor_city, vendor_state, vendor_zip_code
+FROM vendors
+ORDER BY vendor_state, vendor_city, vendor_name ASC;
+
+
+
+-- 4. Update previous query to sort by column position numbers
+SELECT vendor_id, vendor_name, vendor_city, vendor_state, vendor_zip_code
+FROM vendors
+ORDER BY 4, 3, 2 ASC;
+
+
+
+-- 5. Try adding column alias and sorting by that
+SELECT vendor_id, vendor_name AS name, vendor_city as city, vendor_state as state, vendor_zip_code
+FROM vendors
+ORDER BY state, city, name ASC;
+
+--Order of operation
+--FROM
+--WHERE  "vendor_state"
+--SELECT <--
+--ORDER BY "state"
+
+-- 6. Pull data for vendors in NY and NJ wihtout using IN clause
+SELECT vendor_id, vendor_name, vendor_city, vendor_state, vendor_zip_code
+FROM vendors
+WHERE vendor_state = 'NY' OR vendor_state ='NJ';  
+
+
+
+-- 7. Make a copy of the query and update it to pull the same data but this time use the IN operator
+SELECT vendor_id, vendor_name, vendor_city, vendor_state, vendor_zip_code
+FROM vendors
+WHERE vendor_state IN ('NY','NJ');
+
+
+
+-- 8. Make an updated version that EXCLUDES those in NY and NJ
+SELECT vendor_id, vendor_name, vendor_city, vendor_state, vendor_zip_code
+FROM vendors
+WHERE vendor_state NOT IN ('NY','NJ');
+
+
+
+-- 9. Pull the first 7 invoices and then sort them from highest to lowest
+SELECT invoice_id, invoice_total
+FROM invoices
+WHERE ROWNUM<=7
+ORDER BY invoice_total DESC;
+
+---- 9b. This is how you sort them AND THEN pull only the first 7
+--SELECT invoice_id, invoice_total
+--FROM (SELECT * FROM invoices ORDER BY invoice_total DESC)
+--WHERE ROWNUM<=7;
+
+
+
+-- 10. Select invoices with 0 balance
+SELECT invoice_id, invoice_total - payment_total - credit_total AS "balance due"
+FROM invoices
+WHERE invoice_total - payment_total - credit_total = 0;
+
+ 
+-- 11. Select customers with name 'Korah Blanca'
+SELECT customer_id, customer_first_name || ' ' || customer_last_name AS cust_name
+FROM Customers_OM
+WHERE customer_first_name || ' ' || customer_last_name = ('Korah Blanca');
+
+-- will not work - note that you cannot use Alias in WHERE, but you can in ORDER BY
+SELECT customer_id, customer_first_name || ' ' || customer_last_name AS cust_name
+FROM Customers_OM
+WHERE cust_name IN ('Korah Blanca');
+
+
+
+-- 12a. Select customers where the last name starts with 'Dam' using LIKE
+SELECT customer_id, customer_first_name, customer_last_name
+FROM Customers_OM
+WHERE customer_last_name LIKE 'Dam%';
+
+-- 12b. Select customers where the last name starts with 'Dam' using SUBSTR
+SELECT customer_id, customer_first_name, customer_last_name
+FROM Customers_OM
+WHERE SUBSTR(customer_last_name,1,3) = 'Dam';
+
+
+
+-- 13. Pull invoices that are due in the next 120 days
+SELECT invoice_id, invoice_total, invoice_date
+FROM invoices
+WHERE invoice_date BETWEEN SYSDATE and SYSDATE+120;
+
+ 
+
+-- 14. Update the previous query to remove invoices where payment total is not 0
+SELECT invoice_id, invoice_total, invoice_date
+FROM invoices
+WHERE invoice_date BETWEEN SYSDATE and SYSDATE+120 
+        AND payment_total <> 0;
+
+
+
+-- 15. Select all vendors from where city is 'Sacramento' and state is 'CA'
+SELECT vendor_id, vendor_name, vendor_city, vendor_state
+FROM vendors
+WHERE vendor_city = 'Sacramento' AND vendor_state = 'CA';
+
+
+
+-- 16. Now use OR instead of AND - what happens?
+SELECT vendor_id, vendor_name, vendor_city, vendor_state
+FROM vendors
+WHERE vendor_city = 'Washington' OR vendor_state = 'DC';
+
+
+
+-- 17. What happens when you use WHERE NOT
+SELECT * 
+FROM vendors
+WHERE NOT (vendor_state = 'DC' AND vendor_city = 'Washington');
+
+
+
+-- 18. Select vendors where vendor phone is NULL
+SELECT *
+FROM vendors 
+WHERE vendor_phone IS NULL;
+
+
+
+-- 19. Select all vendors with 'Gas' in their name
+SELECT *
+FROM vendors
+WHERE vendor_name LIKE '%Gas%';
+
+
+
+-- 20. Select all vendors with 'gas' in their name
+SELECT *
+FROM vendors
+WHERE vendor_name LIKE '%gas%';
+
+
+
+-- 21. Select all vendors that start with 'B' 
+SELECT * 
+FROM vendors
+WHERE vendor_name LIKE 'B%';
+
+
+
+-- 22. What happens when you specify WHERE vendor_phone IS NOT NULL
+SELECT *
+FROM vendors 
+WHERE vendor_phone IS NOT NULL;
+
+
+
+-- 23. Select all vendors that have an invoice total greater than $1000
+SELECT vendor_id, vendor_name
+FROM vendors
+WHERE vendor_id IN (SELECT vendor_id FROM invoices WHERE invoice_total>1000);
+
+
+
+-- 24. Select those same vendors, but add criteria that vendor must be in CA
+SELECT vendor_id, vendor_name
+FROM vendors
+WHERE vendor_id IN (SELECT vendor_id FROM invoices WHERE invoice_total>1000)
+AND vendor_state = 'CA';
+
+
+
+--Query using ROWNUM in WHERE
+SELECT *
+FROM invoices
+WHERE ROWNUM <=5
+ORDER BY invoice_id DESC;
+--Query using FETCH after ORDER BY
+SELECT *
+FROM invoices
+ORDER BY invoice_id DESC
+FETCH FIRST 5 ROWS ONLY;
+--Query using FETCH by OFFSET filter to start after 2 rows are skipped
+SELECT *
+FROM invoices
+ORDER BY invoice_id DESC
+OFFSET 2 ROWS FETCH NEXT 5 ROWS ONLY;
+
+
+
+-------------------------------------------------------------
+-- How to work with inner join
+-------------------------------------------------------------
+
+--Inner join of two tables using explicit syntax
+SELECT invoice_number, vendor_name
+FROM vendors INNER JOIN invoices 
+	ON vendors.vendor_id = invoices.vendor_id
+ORDER BY invoice_number;
+
+
+--inner join with aliases for all tables
+SELECT 	invoice_number, 
+	vendor_name, 
+	invoice_due_date,
+    	(invoice_total - payment_total - credit_total) AS balance_due
+FROM vendors v JOIN invoices i
+    ON v.vendor_id = i.vendor_id
+WHERE (invoice_total - payment_total - credit_total) > 0
+ORDER BY invoice_due_date DESC;
+
+
+--inner join with table alias for only one table
+SELECT invoice_number, line_item_amt, line_item_description
+FROM invoices JOIN invoice_line_items line_items
+    ON invoices.invoice_id = line_items.invoice_id
+WHERE account_number = 540
+ORDER BY invoice_date;
+
+
+-----Compound inner joins 
+--example 1 (includes both a join condition and filter condition in the JOIN)
+SELECT invoice_number, invoice_date,
+    invoice_total, line_item_amt
+FROM invoices i JOIN invoice_line_items li
+    ON (i.invoice_id = li.invoice_id) AND
+       (i.invoice_total > li.line_item_amt)
+ORDER BY invoice_number;
+
+--example 2 (includes only a join condition in JOIN and puts filter condition in the WHERE) - BEST PRACTICE
+SELECT invoice_number, invoice_date,
+    invoice_total, line_item_amt
+FROM invoices i JOIN invoice_line_items li
+    ON i.invoice_id = li.invoice_id
+WHERE i.invoice_total > li.line_item_amt
+ORDER BY invoice_number;
+
+
+
+-- Self join
+SELECT DISTINCT v1.vendor_name, v1.vendor_city,
+    v1.vendor_state
+FROM vendors v1 JOIN vendors v2
+    ON (v1.vendor_city = v2.vendor_city) AND
+       (v1.vendor_state = v2.vendor_state) AND
+       (v1.vendor_id <> v2.vendor_id)
+ORDER BY v1.vendor_state, v1.vendor_city;
+
+
+-- Join of more than 2 tables
+SELECT vendor_name, invoice_number, invoice_date,
+    line_item_amt, account_description
+FROM vendors v
+    JOIN invoices i 
+        ON v.vendor_id = i.vendor_id
+    JOIN invoice_line_items li 
+        ON i.invoice_id = li.invoice_id
+    JOIN general_ledger_accounts gl 
+        ON li.account_number = gl.account_number
+WHERE (invoice_total - payment_total - credit_total) > 0
+ORDER BY vendor_name, line_item_amt DESC;
+
+
+-- Implicit syntax in an inner join
+SELECT invoice_number, vendor_name
+FROM vendors v, invoices i
+WHERE v.vendor_id = i.vendor_id
+ORDER BY invoice_number;
+
+
+-- Implicit sytax that joins 4 tables
+SELECT vendor_name, invoice_number, invoice_date,
+    line_item_amt, account_description
+FROM  vendors v, invoices i, invoice_line_items  li, 
+    general_ledger_accounts gl
+WHERE v.vendor_id = i.vendor_id
+  AND i.invoice_id = li.invoice_id
+  AND li.account_number = gl.account_number
+  AND (invoice_total - payment_total - credit_total) > 0
+ORDER BY vendor_name, line_item_amt DESC;
+
+
+
+-------------------------------------------------------------
+-- How to work with OUTER join
+-------------------------------------------------------------
+---OUTER JOINS
+SELECT vendor_name, invoice_number, invoice_total
+FROM vendors LEFT JOIN invoices
+    ON vendors.vendor_id = invoices.vendor_id
+ORDER BY vendor_name;
+
+
+--LEFT JOIN
+SELECT department_name AS dept_name, 
+    d.department_number AS dept_no,
+    last_name
+FROM departments d 
+    LEFT JOIN employees e
+    ON d.department_number =
+       e.department_number
+ORDER BY department_name;
+
+
+--RIGHT JOIN
+SELECT department_name AS dept_name, 
+    e.department_number AS dept_no,
+    last_name
+FROM departments d 
+    RIGHT JOIN employees e
+    ON d.department_number = 
+       e.department_number
+ORDER BY department_name;
+
+
+--FULL JOIN
+SELECT department_name AS dept_name, 
+    d.department_number AS d_dept_no,
+    e.department_number AS e_dept_no, 
+    last_name
+FROM departments d 
+    FULL JOIN employees e
+    ON d.department_number =
+       e.department_number
+ORDER BY department_name;
+
+
+--- OUTER JOINING MORE THAN TWO TABLES - LEFT
+SELECT department_name, 
+    last_name, 
+    project_number AS proj_no
+FROM departments d
+    LEFT JOIN employees e
+        ON d.department_number = e.department_number
+    LEFT JOIN projects p
+        ON e.employee_id = p.employee_id
+ORDER BY department_name, last_name, 
+    project_number;
+    
+    
+--- OUTER JOINING MORE THAN TWO TABLES - FULL
+SELECT department_name, last_name, 
+    project_number AS proj_no
+FROM departments d
+    FULL JOIN employees e
+        ON d.department_number = e.department_number
+    FULL JOIN projects p
+        ON e.employee_id = p.employee_id
+ORDER BY department_name;
+
+
+--COMBINING INNER AND OUTER JOIN
+SELECT department_name AS dept_name, last_name, project_number
+FROM departments dpt
+    JOIN employees emp
+        ON dpt.department_number = emp.department_number
+    LEFT JOIN projects prj
+        ON emp.employee_id = prj.employee_id
+ORDER BY department_name;
+
+
+-------------------------------------------------------------
+-- How to work with UNION of two or more queries
+-------------------------------------------------------------
+
+--UNION from two different tables
+ SELECT 'Active' AS source, invoice_number, invoice_date, invoice_total 
+ FROM active_invoices
+ WHERE invoice_date >= '01-JUN-2014'
+UNION
+ SELECT 'Paid' AS source, invoice_number, invoice_date, invoice_total
+ FROM paid_invoices
+ WHERE invoice_date >= '01-JUN-2014'
+ORDER BY invoice_total DESC;
+
+
+--UNION FROM THE SAME TABLE
+    SELECT 'Active' AS source, invoice_number, invoice_date, invoice_total
+    FROM invoices
+    WHERE (invoice_total - payment_total - credit_total) > 0
+UNION
+    SELECT 'Paid' AS source, invoice_number, invoice_date, invoice_total
+    FROM invoices
+    where (invoice_total - payment_total - credit_total) <= 0
+ORDER BY invoice_total DESC;
+
+
+
+--UNION FROM SAME JOINED TABLES
+    SELECT invoice_number, vendor_name, '33% Payment' AS payment_type,
+        invoice_total AS total, (invoice_total * 0.333) AS payment
+    FROM invoices JOIN vendors
+        ON invoices.vendor_id = vendors.vendor_id
+    WHERE invoice_total > 10000
+UNION
+    SELECT invoice_number, vendor_name, '50% Payment' AS payment_type,
+        invoice_total AS total, (invoice_total * 0.5) AS payment
+    FROM invoices JOIN vendors
+        ON invoices.vendor_id = vendors.vendor_id
+    WHERE invoice_total BETWEEN 500 AND 10000
+UNION
+    SELECT invoice_number, vendor_name, 'Full amount' AS payment_type,
+        invoice_total AS Total, invoice_total AS Payment
+    FROM invoices JOIN vendors
+        ON invoices.vendor_id = vendors.vendor_id
+    WHERE invoice_total < 500
+ORDER BY payment_type, vendor_name, invoice_number;
+
+
+-------------------------------------------------------------
+-- How to use MINUS and INTERSET
+-------------------------------------------------------------
+
+--MINUS
+ SELECT customer_first_name, customer_last_name
+    FROM customers_ex
+MINUS
+    SELECT first_name, last_name
+    FROM employees
+ORDER BY customer_last_name;
+
+
+--MINUS to compare a list of values between two tables  ***Example not in the book***
+select vendor_id
+from vendors
+ minus
+select distinct vendor_id
+from invoices;
+
+
+--INTERSECT
+    SELECT customer_first_name, customer_last_name 
+    FROM customers_ex
+INTERSECT
+    SELECT first_name, last_name 
+    FROM employees;
+    
+--INTERSECT of vendor_ids on Vendors and Invoices
+select vendor_id
+from vendors
+ INTERSECT
+select distinct vendor_id
+from invoices;
+
+
+
+SELECT COUNT(*) AS number_of_invoices,
+    SUM(invoice_total - payment_total - credit_total) AS total_due
+FROM invoices
+WHERE invoice_total - payment_total - credit_total > 0;
+
+SELECT 'After 1/1/2014' AS selection_date, 
+    COUNT(*) AS number_of_invoices,
+    ROUND(AVG(invoice_total), 2) AS avg_invoice_amt,
+    SUM(invoice_total) AS total_invoice_amt
+FROM invoices
+WHERE invoice_date > '01-JAN-2014';
+
+SELECT 'After 1/1/2014' AS selection_date, COUNT(*) AS number_of_invoices,
+    MAX(invoice_total) AS highest_invoice_total,
+    MIN(invoice_total) AS lowest_invoice_total
+FROM invoices
+WHERE invoice_date > '01-JAN-2014';
+
+SELECT MIN(vendor_name) AS first_vendor,
+    MAX(vendor_name) AS last_vendor,
+    COUNT(vendor_name) AS number_of_vendors
+FROM vendors;
+
+SELECT COUNT(DISTINCT vendor_id) AS number_of_vendors,
+    COUNT(vendor_id) AS number_of_invoices,
+    ROUND(AVG(invoice_total),2) AS avg_invoice_amt,
+    SUM(invoice_total) AS total_invoice_amt
+FROM invoices
+WHERE invoice_date > '01-JAN-2014';
+
+SELECT vendor_id, ROUND(AVG(invoice_total), 2) AS average_invoice_amount
+FROM invoices
+GROUP BY vendor_id
+HAVING AVG(invoice_total) > 2000
+ORDER BY average_invoice_amount DESC;
+
+SELECT vendor_id, COUNT(*) AS invoice_qty
+FROM invoices
+GROUP BY vendor_id
+ORDER BY vendor_id;
+
+SELECT vendor_state, vendor_city, COUNT(*) AS invoice_qty,
+    ROUND(AVG(invoice_total),2) AS invoice_avg
+FROM invoices JOIN vendors
+    ON invoices.vendor_id = vendors.vendor_id
+GROUP BY vendor_state, vendor_city
+ORDER BY vendor_state, vendor_city;
+
+SELECT vendor_state, vendor_city, COUNT(*) AS invoice_qty,
+    ROUND(AVG(invoice_total),2) AS invoice_avg
+FROM invoices JOIN vendors
+    ON invoices.vendor_id = vendors.vendor_id
+GROUP BY vendor_state, vendor_city
+HAVING COUNT(*) >= 2
+ORDER BY vendor_state, vendor_city;
+
+SELECT vendor_name, COUNT(*) AS invoice_qty,
+    ROUND(AVG(invoice_total),2) AS invoice_avg
+FROM vendors JOIN invoices
+    ON vendors.vendor_id = invoices.vendor_id
+GROUP BY vendor_name
+HAVING AVG(invoice_total) > 500
+ORDER BY invoice_qty DESC;
+
+SELECT vendor_name, COUNT(*) AS invoice_qty,
+    ROUND(AVG(invoice_total),2) AS invoice_avg
+FROM vendors JOIN invoices
+    ON vendors.vendor_id = invoices.vendor_id
+WHERE invoice_total > 500
+GROUP BY vendor_name
+ORDER BY invoice_qty DESC;
+
+SELECT invoice_date FROM invoices;
+
+-- this will not return anything... ask students why?
+SELECT 
+   invoice_date,
+   COUNT(*) AS invoice_qty,
+   SUM(invoice_total) AS invoice_sum
+FROM invoices
+GROUP BY invoice_date
+HAVING invoice_date BETWEEN  '01-MAY-2014' AND '31-MAY-2014'
+   AND COUNT(*) > 1
+   AND SUM(invoice_total) > 100
+ORDER BY invoice_date DESC;
+
+SELECT 
+   invoice_date,
+   COUNT(*) AS invoice_qty,
+   SUM(invoice_total) AS invoice_sum
+FROM invoices
+GROUP BY invoice_date
+HAVING invoice_date BETWEEN '01-FEB-2021' AND '28-FEB-2021'
+   AND COUNT(*) > 1
+   AND SUM(invoice_total) > 100
+ORDER BY invoice_date DESC;
+
+SELECT 
+   invoice_date,  
+   COUNT(*) AS invoice_qty,  
+   SUM(invoice_total) AS invoice_sum
+FROM invoices
+WHERE invoice_date BETWEEN '01-FEB-2021' AND '28-FEB-2021'
+GROUP BY invoice_date
+HAVING COUNT(*) > 1
+   AND SUM(invoice_total) > 100
+ORDER BY invoice_date DESC;
+
+SELECT vendor_id, COUNT(*) AS invoice_count,
+    SUM(invoice_total) AS invoice_total
+FROM invoices
+GROUP BY ROLLUP(vendor_id);
+
+SELECT vendor_state, vendor_city, COUNT(*) AS qty_vendors
+FROM vendors
+WHERE vendor_state IN ('IA', 'NJ')
+GROUP BY ROLLUP (vendor_state, vendor_city)
+ORDER BY vendor_state, vendor_city;
+
+SELECT vendor_id, COUNT(*) AS invoice_count,
+    SUM(invoice_total) AS invoice_total
+FROM invoices
+GROUP BY CUBE(vendor_id);
+
+SELECT vendor_state, vendor_city, COUNT(*) AS qty_vendors
+FROM vendors
+WHERE vendor_state IN ('IA', 'NJ')
+GROUP BY CUBE(vendor_state, vendor_city)
+ORDER BY vendor_state, vendor_city;
+
+
+
+
+
+-----------------------------------------------------------------
+-------------------  INTRO TO SUBQUERIES ------------------------
+-----------------------------------------------------------------
+
+--1 Select statement that uses a subquery in the WHERE clause
+SELECT invoice_number, invoice_date, invoice_total
+FROM invoices
+WHERE invoice_total > 
+    (SELECT AVG(invoice_total)
+     FROM invoices)
+ORDER BY invoice_total;
+
+
+
+
+-----------------------------------------------------------------
+----------------  Subqueries compared to Joins ------------------
+-----------------------------------------------------------------
+
+--2a Query that uses an inner join
+SELECT invoice_number, invoice_date, invoice_total
+FROM invoices JOIN vendors
+    ON invoices.vendor_id = vendors.vendor_id
+WHERE vendor_state = 'CA'
+ORDER BY invoice_date;
+
+--2b same query restated with a subquery
+SELECT invoice_number, invoice_date, invoice_total
+FROM invoices
+WHERE vendor_id IN
+    (SELECT vendor_id
+    FROM vendors
+    WHERE vendor_state = 'CA')
+ORDER BY invoice_date;
+
+
+
+-----------------------------------------------------------------
+-------------- Code Subqueries in search conditions  ------------
+-----------------------------------------------------------------
+
+--3a query that returns vendors without invoices
+SELECT vendor_id, vendor_name, vendor_state
+FROM vendors
+WHERE vendor_id NOT IN
+    (SELECT DISTINCT vendor_id
+    FROM invoices)
+ORDER BY vendor_id;
+
+--3b query restated without a subquery
+SELECT v.vendor_id, vendor_name, vendor_state
+FROM vendors v LEFT JOIN invoices i
+    ON v.vendor_id = i.vendor_id
+WHERE i.vendor_id IS NULL
+ORDER BY v.vendor_id;
+
+
+
+--4 comparing results of subquery with an expression
+SELECT invoice_number, invoice_date, 
+    invoice_total - payment_total - credit_total AS balance_due
+FROM invoices
+WHERE invoice_total - payment_total - credit_total  > 0 
+    AND invoice_total - payment_total - credit_total <
+    (
+    SELECT AVG(invoice_total - payment_total - credit_total)
+    FROM invoices
+    WHERE invoice_total - payment_total - credit_total > 0
+    )
+ORDER BY invoice_total DESC;
+
+
+ 
+
+
+
+
+
+
+
+-- Using the ALL keyword
+-- 5 query that returns invoices larger than largest invoice for vendor 34 using ALL
+SELECT vendor_name, invoice_number, invoice_total
+FROM invoices i JOIN vendors v ON i.vendor_id = v.vendor_id
+WHERE invoice_total > ALL
+    (SELECT invoice_total
+    FROM invoices
+    WHERE vendor_id = 34)
+ORDER BY vendor_name;
+ 
+
+
+-- Using the ANY and SOME keywords
+--6 query that returns invoice amounts smaller than the largest invoice amount for vendor 115
+SELECT vendor_name, invoice_number, invoice_total
+FROM vendors JOIN invoices ON vendors.vendor_id = invoices.invoice_id
+WHERE invoice_total < ANY   --TIP: try using SOME instead of ANY
+    (SELECT invoice_total
+    FROM invoices
+    WHERE vendor_id = 115);
+
+ 
+
+
+
+
+-----------------------------------------------------------------
+------------------ Other ways to use subqueries  ----------------
+-----------------------------------------------------------------
+
+--9 How to code a subquery in the FROM
+SELECT  i.vendor_id, MAX(invoice_date) AS last_invoice_date,
+    AVG(invoice_total) AS average_invoice_total
+FROM invoices i JOIN
+    (
+    SELECT vendor_id, AVG(invoice_total) AS average_invoice_total
+    FROM invoices
+    HAVING AVG(invoice_total) > 4900
+    GROUP BY vendor_id
+    ) v
+    ON i.vendor_id = v.vendor_id
+GROUP BY i.vendor_id
+ORDER BY MAX(invoice_date) DESC;
+
+
+ 
+
+--10 How to code subqueries in the SELECT clause
+--************************************
+SELECT  vendor_name,
+        (SELECT MAX(invoice_date) 
+        FROM invoices
+        WHERE invoices.vendor_id = v.vendor_id) AS latest_inv
+FROM vendors v
+ORDER BY latest_inv;
+
+--same query restated using a join
+SELECT vendor_name, MAX(invoice_date) AS latest_inv
+FROM vendors v LEFT JOIN invoices i 
+       ON v.vendor_id = i.vendor_id
+GROUP BY vendor_name
+ORDER BY latest_inv;
+
+
+
+
+--11  Complex query that uses subqueries
+SELECT summary1.vendor_state, summary1.vendor_name, top_in_state.sum_of_invoices
+FROM
+    (
+    SELECT v_sub.vendor_state, v_sub.vendor_name,
+        SUM(i_sub.invoice_total) AS sum_of_invoices
+    FROM invoices i_sub JOIN vendors v_sub
+        ON i_sub.vendor_id = v_sub.vendor_id
+    GROUP BY v_sub.vendor_state, v_sub.vendor_name
+    ) summary1
+    JOIN
+        (
+        SELECT summary2.vendor_state,
+            MAX(summary2.sum_of_invoices) AS sum_of_invoices
+        FROM
+            (
+            SELECT v_sub.vendor_state, v_sub.vendor_name,
+                SUM(i_sub.invoice_total) AS sum_of_invoices
+            FROM invoices i_sub JOIN vendors v_sub
+                ON i_sub.vendor_id = v_sub.vendor_id
+            GROUP BY v_sub.vendor_state, v_sub.vendor_name
+            ) summary2
+        GROUP BY summary2.vendor_state
+        ) top_in_state
+    ON summary1.vendor_state = top_in_state.vendor_state AND
+       summary1.sum_of_invoices = top_in_state.sum_of_invoices
+ORDER BY summary1.vendor_state;
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+-----------------------------------
+------OUT OF SCOPE FOR CLASS-------
+------ Practice is optional -------
+-----------------------------------
+--7 Correlated Queries   
+SELECT vendor_id, invoice_number, invoice_total
+FROM invoices inv_main
+WHERE invoice_total >
+    (SELECT AVG(invoice_total)
+    FROM invoices inv_sub
+    WHERE inv_sub.vendor_id = inv_main.vendor_id)
+ORDER BY vendor_id, invoice_total;
+
+
+SELECT vendor_id, invoice_number, invoice_total
+FROM invoices inv_main
+WHERE invoice_total >
+    (SELECT AVG(invoice_total)
+    FROM invoices)  
+ORDER BY vendor_id, invoice_total;
+
+SELECT AVG(invoice_total)
+FROM invoices inv_sub
+WHERE inv_sub.vendor_id = 95;
+
+ 
+--8 EXISTS keyword
+SELECT vendor_id, vendor_name, vendor_state
+FROM vendors
+WHERE NOT EXISTS
+    (SELECT *
+    FROM invoices
+    WHERE invoices.vendor_id = vendors.vendor_id)
+ORDER BY vendor_id;
+
+
+--13 subquery factoring clause
+WITH summary AS
+(
+    SELECT vendor_state, vendor_name, SUM(invoice_total) AS sum_of_invoices
+    FROM invoices 
+        JOIN vendors ON invoices.vendor_id = vendors.vendor_id
+    GROUP BY vendor_state, vendor_name
+),
+top_in_state AS
+(
+    SELECT vendor_state, MAX(sum_of_invoices) AS sum_of_invoices
+    FROM summary
+    GROUP BY vendor_state
+)
+SELECT summary.vendor_state, summary.vendor_name, 
+    top_in_state.sum_of_invoices
+FROM summary JOIN top_in_state
+    ON summary.vendor_state = top_in_state.vendor_state AND
+       summary.sum_of_invoices = top_in_state.sum_of_invoices
+ORDER BY summary.vendor_state;
+
+
+-- 14 code a hierarchical query
+SELECT employee_id,
+   first_name || ' ' || last_name AS employee_name,
+   LEVEL
+FROM employees
+START WITH employee_id = 1
+CONNECT BY PRIOR employee_id = manager_id
+ORDER BY LEVEL, employee_id;
+
+
+
+
+--------------------------------------------------------------------
+-- Example 1: Script that contains an anonymous PL/SQL block
+--------------------------------------------------------------------
+-- this allows to turn on the output, so we can see it
+-- you only need to run this one time
+SET SERVEROUTPUT ON;
+
+-- Begin an anonymous PL/SQL block
+DECLARE
+  sum_balance_due_var NUMBER(9, 2);
+BEGIN
+  SELECT SUM(invoice_total - payment_total - credit_total)
+  INTO sum_balance_due_var
+  FROM invoices 
+  WHERE vendor_id = 95;
+
+  IF sum_balance_due_var > 0 THEN
+-- DBMS_OUTPUT.PUT_LINE is a function that prints a nice line
+    DBMS_OUTPUT.PUT_LINE('Balance due: $' || ROUND(sum_balance_due_var, 2));
+  ELSE
+    DBMS_OUTPUT.PUT_LINE('Balance paid in full');
+  END IF;
+
+EXCEPTION
+  WHEN OTHERS THEN
+    DBMS_OUTPUT.PUT_LINE('An error occured in the script');
+END;
+/
+-- This forward slash is actually important
+-- A forward slash is used to execute the SQL statement or PL/SQL block that is currently in the buffer
+-- End an anonymous PL/SQL block
+
+
+
+
+-------------------------------------------------------------------
+-- Example 2: How to make sure server output to allow use of PUT_LINE function
+-------------------------------------------------------------------
+SET SERVEROUTPUT ON;
+
+BEGIN
+  DBMS_OUTPUT.PUT_LINE('Test SQL Developer');
+END;
+/
+
+
+
+
+--------------------------------------------------------------------
+-- Example 3: Script that uses variables
+--------------------------------------------------------------------
+
+SET SERVEROUTPUT ON;
+
+DECLARE
+  --max_invoice_total NUMBER;
+  max_invoice_total  invoices.invoice_total%TYPE;
+  --min_invoice_total NUMBER;
+  min_invoice_total  invoices.invoice_total%TYPE;
+  percent_difference NUMBER;
+  count_invoice_id   NUMBER;
+  vendor_id_var      NUMBER := 95;
+BEGIN  
+  SELECT MAX(invoice_total), MIN(invoice_total), COUNT(invoice_id)
+  INTO max_invoice_total, min_invoice_total, count_invoice_id
+  FROM invoices WHERE vendor_id = vendor_id_var;
+
+  percent_difference := (max_invoice_total - min_invoice_total) / 
+                         min_invoice_total * 100;
+  
+  DBMS_OUTPUT.PUT_LINE('Maximum invoice: $' || max_invoice_total);
+  DBMS_OUTPUT.PUT_LINE('Minimum invoice: $' || min_invoice_total);
+  DBMS_OUTPUT.PUT_LINE('Percent difference: %' || 
+                        ROUND(percent_difference, 2));
+  DBMS_OUTPUT.PUT_LINE('Number of invoices: ' || count_invoice_id);
+END;
+/
+
+
+--------------------------------------------------------------------
+-- Example 4: How to code an IF statement
+--------------------------------------------------------------------
+
+DECLARE
+  first_invoice_due_date DATE;
+BEGIN  
+  SELECT MIN(invoice_due_date)
+  INTO first_invoice_due_date
+  FROM invoices
+  WHERE invoice_total - payment_total - credit_total > 0;
+
+  IF first_invoice_due_date < SYSDATE() THEN
+    DBMS_OUTPUT.PUT_LINE('Outstanding invoices overdue!');
+  ELSIF first_invoice_due_date = SYSDATE() THEN
+    DBMS_OUTPUT.PUT_LINE('Outstanding invoices are due today!');
+  ELSE
+    DBMS_OUTPUT.PUT_LINE('No invoices are overdue.');
+  END IF;
+
+-- the IF statement rewritten as a Searched CASE statement
+
+--  CASE  
+--    WHEN first_invoice_due_date < SYSDATE() THEN
+--      DBMS_OUTPUT.PUT_LINE('Outstanding invoices overdue!');
+--    WHEN first_invoice_due_date = SYSDATE() THEN
+--      DBMS_OUTPUT.PUT_LINE('Outstanding invoices are due today!');
+--    ELSE
+--      DBMS_OUTPUT.PUT_LINE('No invoices are overdue.');
+--  END CASE;
+
+  
+END;
+/
+
+-- update for current numbers to change output
+SELECT MIN(invoice_due_date) FROM invoices;
+
+UPDATE invoices
+SET invoice_due_date = ADD_MONTHS(invoice_due_date, 10);
+
+ROLLBACK;
+
+
+--------------------------------------------------------------------
+-- Example 5: How to code a CASE statement
+--------------------------------------------------------------------
+SET SERVEROUTPUT ON;
+
+DECLARE
+  terms_id_var NUMBER;
+BEGIN  
+  SELECT terms_id 
+  INTO terms_id_var 
+  FROM invoices 
+  WHERE invoice_id = 4;
+
+  CASE terms_id_var
+    WHEN 1 THEN 
+      DBMS_OUTPUT.PUT_LINE('Net due 10 days');      
+    WHEN 2 THEN 
+      DBMS_OUTPUT.PUT_LINE('Net due 20 days');      
+    WHEN 3 THEN 
+      DBMS_OUTPUT.PUT_LINE('Net due 30 days');      
+    ELSE
+      DBMS_OUTPUT.PUT_LINE('Net due more than 30 days');      
+  END CASE;
+
+-- rewritten as a Searched CASE statement
+--  CASE 
+--    WHEN terms_id_var = 1 THEN 
+--      DBMS_OUTPUT.PUT_LINE('Net due 10 days');      
+--    WHEN terms_id_var = 2 THEN 
+--      DBMS_OUTPUT.PUT_LINE('Net due 20 days');      
+--    WHEN terms_id_var = 3 THEN 
+--      DBMS_OUTPUT.PUT_LINE('Net due 30 days');      
+--    ELSE
+--      DBMS_OUTPUT.PUT_LINE('Net due more than 30 days');      
+--  END CASE;
+
+END;
+/
+
+
+
+--------------------------------------------------------------------
+-- Example 6: How to code a loops
+--------------------------------------------------------------------
+
+SET SERVEROUTPUT ON;
+
+BEGIN  
+  DBMS_OUTPUT.PUT_LINE('Begin FOR loop');
+  FOR i IN 1..3 LOOP
+    DBMS_OUTPUT.PUT_LINE('i: ' || i);
+  END LOOP;
+END;
+/
+
+--NOTE: While and Simple loops are not in scope but feel free to explore if you're curious
+
+--DECLARE
+--  i INTEGER;
+--BEGIN  
+--  DBMS_OUTPUT.PUT_LINE('Begin WHILE loop');
+--  i := 1;
+--  WHILE i < 4 LOOP
+--    DBMS_OUTPUT.PUT_LINE('i: ' || i);
+--    i := i + 1;
+--  END LOOP;
+--
+--END;
+--/
+--
+--DECLARE
+--  i INTEGER;
+--BEGIN  
+--  DBMS_OUTPUT.PUT_LINE('Begin simple loop');
+--  i := 1;
+--  LOOP
+--    DBMS_OUTPUT.PUT_LINE('i: ' || i);
+--    i := i + 1;
+--    IF i >= 4 THEN
+--      EXIT;
+--    END IF;
+--  END LOOP;
+--
+--END;
+--/
+
+
+
+-----------------------------------------------------------------------
+-- Example 7: How to use a cursor
+-----------------------------------------------------------------------
+
+SET SERVEROUTPUT ON;
+
+DECLARE
+  CURSOR invoices_cursor IS
+    SELECT invoice_id, invoice_total  
+    FROM invoices
+    WHERE invoice_total - payment_total - credit_total > 0;
+
+  invoice_row invoices%ROWTYPE;
+BEGIN  
+  FOR invoice_row IN invoices_cursor LOOP   
+  
+    IF (invoice_row.invoice_total > 1000) THEN
+      UPDATE invoices
+      SET credit_total = credit_total + (invoice_total * .1)
+      WHERE invoice_id = invoice_row.invoice_id;
+
+      DBMS_OUTPUT.PUT_LINE('1 row updated where invoice_id = ' || 
+                            invoice_row.invoice_id);
+    END IF; 
+
+  END LOOP;
+  
+  -- remove ROLLBACK to view changes
+  ROLLBACK;
+  DBMS_OUTPUT.PUT_LINE('ROLLBACK succeeded.');
+
+END;
+/
+
+
+--SELECT * FROM invoices 
+--WHERE invoice_total > 1000 AND invoice_total - payment_total - credit_total > 0;
+--
+--UPDATE invoices
+--SET credit_total = credit_total + (invoice_total * .1)
+--WHERE invoice_total - payment_total - credit_total > 0
+--AND invoice_total > 1000;
+--
+--ROLLBACK;
+
+
+
+
+-----------------------------------------------------------------------
+-- Example 8: How to use collections
+-----------------------------------------------------------------------
+-- a varray with BULK COLLECT and COUNT
+DECLARE
+  TYPE names_table      IS TABLE OF VARCHAR2(40);
+  vendor_names          names_table;
+BEGIN
+  SELECT vendor_name
+  BULK COLLECT INTO vendor_names
+  FROM vendors
+  WHERE rownum < 8
+  ORDER BY vendor_id;
+
+  FOR i IN 1..vendor_names.COUNT LOOP
+    DBMS_OUTPUT.PUT_LINE('Vendor name ' || i || ': ' || vendor_names(i));
+  END LOOP;
+END;
+/
+
+
+-----------------------------------------------------------------------
+-- Example 9: How to handle exceptions
+-----------------------------------------------------------------------
+--INSERT INTO general_ledger_accounts VALUES (130, 'Cash');
+--
+--select * 
+--from general_ledger_accounts
+--order by account_number;
+--
+--delete
+--from general_ledger_accounts
+--where account_number = 130;
+
+SET SERVEROUTPUT ON;
+
+BEGIN  
+  INSERT INTO general_ledger_accounts VALUES (130, 'Cash');
+
+  DBMS_OUTPUT.PUT_LINE('1 row inserted.');
+EXCEPTION
+  WHEN DUP_VAL_ON_INDEX THEN
+    DBMS_OUTPUT.PUT_LINE('You attempted to insert a duplicate value.');
+
+  WHEN OTHERS THEN
+    DBMS_OUTPUT.PUT_LINE('An unexpected exception occurred.');
+    DBMS_OUTPUT.PUT_LINE(SQLERRM);
+END;
+/
+
+
+-----------------------------------------------------------------------
+-- Example 10: How to execute code correctly without displaying an error
+-----------------------------------------------------------------------
+BEGIN  
+  EXECUTE IMMEDIATE 'DROP TABLE test1';
+EXCEPTION
+  WHEN OTHERS THEN 
+    NULL;
+END;
+/
+
+CREATE TABLE test1 (test_id NUMBER);
+
+
+-----------------------------------------------------------------------
+-- Example 11: How we use bind and substitution variables
+-----------------------------------------------------------------------
+
+SET SERVEROUTPUT ON;
+
+-- Use the VARIABLE keyword to declare a bind variable
+VARIABLE invoice_id_value NUMBER;
+     
+-- Use a PL/SQL block to set the value of a bind variable
+-- to the value that's entered for a substitution variable
+BEGIN
+  :invoice_id_value := &invoice_id;
+END;
+/
+
+-- Use a bind variable in a SELECT statement
+SELECT invoice_id, invoice_number
+FROM invoices
+WHERE invoice_id = :invoice_id_value;
+     
+-- Use a bind variable in another PL/SQL block
+BEGIN
+  DBMS_OUTPUT.PUT_LINE('invoice_id_value: ' || :invoice_id_value);
+END;
+/
+
+
+--------------------------------------------------------------------
+-- Example 12: How to make dynamic SQL using substitution variables
+--------------------------------------------------------------------
+SET SERVEROUTPUT ON;
+
+DECLARE
+  invoice_id_var NUMBER;
+  terms_id_var NUMBER;
+  dynamic_sql VARCHAR2(400);
+BEGIN
+  invoice_id_var := &invoice_id;
+  terms_id_var := &terms_id;
+  
+  dynamic_sql := 'UPDATE invoices ' ||
+                 'SET terms_id = ' || terms_id_var || ' ' ||
+                 'WHERE invoice_id = ' || invoice_id_var;
+
+  DBMS_OUTPUT.PUT_LINE('dynamic_sql: ' || dynamic_sql);
+  
+  EXECUTE IMMEDIATE dynamic_sql;
+END;
+/
+
+
+                 
+SELECT invoice_id, terms_id FROM invoices WHERE invoice_id = 114;
